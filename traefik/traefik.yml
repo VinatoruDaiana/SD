@@ -1,0 +1,10 @@
+entryPoints:
+  web:
+    address: ":80"
+
+api:
+  dashboard: true  # poți vedea dashboard la /dashboard (vom publica doar local)
+
+providers:
+  docker:
+    exposedByDefault: false
