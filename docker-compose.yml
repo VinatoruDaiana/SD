@@ -1,0 +1,173 @@
+networks:
+  proxy:
+  backend:
+
+volumes:
+  user_db_data:
+  device_db_data:
+  auth_db_data: 
+
+services:
+  # ------------ Reverse proxy -------------
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+    networks: [proxy]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on: []
+    
+
+  # ------------ User DB -------------------
+  user-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: userpass
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks: [backend]
+    ports:
+      - "5433:5432"        # <-- port pe HOST : port în container
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# ------------ Device DB -----------------
+  device-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: devicedb
+      POSTGRES_USER: device
+      POSTGRES_PASSWORD: devicepass
+    volumes:
+      - device_db_data:/var/lib/postgresql/data
+    networks: [backend]
+    ports:
+      - "5434:5432"        # <-- alt port pe HOST
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U device -d devicedb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+#-------------------Auth DB--------------------
+  auth-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: authpass
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks: [backend]
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d authdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+
+  # ------------ User Service --------------
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile   
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      USER_DB_HOST: user-db
+      USER_DB_PORT: "5432"
+      USER_DB_NAME: userdb
+      USER_DB_USER: user
+      USER_DB_PASS: userpass
+    depends_on:
+      user-db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.users.rule=PathPrefix(`/users`)
+      - traefik.http.routers.users.entrypoints=web
+      - traefik.http.services.users.loadbalancer.server.port=8080
+      - traefik.http.middlewares.users-strip.stripprefix.prefixes=/users
+      - traefik.http.routers.users.middlewares=users-strip@docker
+    networks: [proxy, backend]
+
+  # ------------ Device Service ------------
+  device-service:
+    build:
+      context: ./device-service
+      dockerfile: Dockerfile   
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DEVICE_DB_HOST: device-db
+      DEVICE_DB_PORT: "5432"
+      DEVICE_DB_NAME: devicedb
+      DEVICE_DB_USER: device
+      DEVICE_DB_PASS: devicepass
+    depends_on:
+      device-db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.devices.rule=PathPrefix(`/devices`)
+      - traefik.http.routers.devices.entrypoints=web
+      - traefik.http.services.devices.loadbalancer.server.port=8080
+      - traefik.http.middlewares.devices-strip.stripprefix.prefixes=/devices
+      - traefik.http.routers.devices.middlewares=devices-strip@docker
+    networks: [proxy, backend]
+
+
+ #-------------------------Auth service --------------------
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: auth-db
+      DB_PORT: "5432"
+      DB_NAME: authdb
+      DB_USER: auth
+      DB_PASS: authpass
+      JWT_SECRET: change-me-please
+      JWT_EXP_SECONDS: "86400"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.auth.rule=PathPrefix(`/auth`)
+      - traefik.http.routers.auth.entrypoints=web
+      - traefik.http.services.auth.loadbalancer.server.port=8080
+      - traefik.http.middlewares.auth-strip.stripprefix.prefixes=/auth
+      - traefik.http.routers.auth.middlewares=auth-strip@docker
+    networks: [proxy, backend]
+
+ # ------------ Frontend ------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - user-service
+      - device-service
+      - auth-service
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.web.rule=PathPrefix(`/`)
+      - traefik.http.routers.web.entrypoints=web
+      - traefik.http.services.web.loadbalancer.server.port=80
+    networks: [proxy]
+
