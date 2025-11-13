@@ -1,9 +1,9 @@
 server:
-  port: 8082   # device-service expune 8080 acum; recomand să-l standardizezi la 8082
+  port: 8083
 
 spring:
   datasource:
-    url: jdbc:postgresql://device-db:5432/devices_db
+    url: jdbc:postgresql://auth-db:5432/auth_db
     username: postgres
     password: root
   jpa:
@@ -16,6 +16,11 @@ spring:
     init:
       mode: never
 
+# call-uri către celelalte servicii din rețeaua Docker
 user:
   service:
     baseUrl: http://user-service:8081
+
+# dacă ai nevoie de CORS:
+frontend:
+  origin: http://localhost

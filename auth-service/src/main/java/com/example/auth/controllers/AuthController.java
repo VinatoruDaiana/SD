@@ -19,12 +19,11 @@ import java.util.Objects;
 import java.util.Map;
 
 
-@Tag(name = "Auth")
-@SecurityRequirement(name = "bearerAuth")
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost","http://localhost:5173"})
 public class AuthController {
     private final AuthService userService;
     private final AuthService authService;

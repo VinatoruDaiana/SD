@@ -26,48 +26,53 @@ public class AuthService {
     private final com.example.auth.services.JwtService jwt;
     private final UserClient userClient;
 
-    public Long registerUser(RegisterRequest request) {
+   public Long registerUser(RegisterRequest request) {
+    if (userRepository.findByUsername(request.username()).isPresent()) {
+        throw new RuntimeException("Username already exists");
+    }
+    
+    User user = User.builder()
+            .username(request.username())
+            .email(request.email())
+            .password(encoder.encode(request.password()))
+            .role(UserRole.USER)
+            .build();
 
-        if (userRepository.findByUsername(request.username()).isPresent()) {
-            throw new RuntimeException("Username already exists");
-        }
-        User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .password(encoder.encode(request.password()))
-                .role(UserRole.USER)
-                .build();
+    User saved = userRepository.save(user);
 
-        User saved = userRepository.save(user);
-
-
+    // Async sync to avoid blocking
+    try {
         userClient.upsertUser(
                 saved.getUsername(),
                 saved.getEmail(),
                 saved.getPassword(),
                 saved.getRole().name()
         );
-
-        return saved.getId();
+    } catch (Exception e) {
+        System.err.println("Warning: Failed to sync to user-service: " + e.getMessage());
+        // Don't fail the registration if sync fails
     }
 
-
-    public String login(LoginRequest loginRequest) {
-
-
-        var user = userRepository.findByUsername(loginRequest.username())
-                .orElseThrow(() -> new RuntimeException("Username not found"));
+    return saved.getId();
+}
 
 
-        if (!encoder.matches(loginRequest.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
-        }
 
-        return jwt.generateAccess(
-                user.getUsername(),
-                String.valueOf(user.getRole()),
-                user.getId());
+
+   public String login(LoginRequest loginRequest) {
+    var user = userRepository.findByUsername(loginRequest.username())
+            .orElseThrow(() -> new RuntimeException("Username not found"));
+
+    if (!encoder.matches(loginRequest.password(), user.getPassword())) {
+        throw new RuntimeException("Invalid password");
     }
+
+    // Just return token - no sync needed during login
+    return jwt.generateAccess(
+            user.getUsername(),
+            String.valueOf(user.getRole()),
+            user.getId());
+}
 
     public Map<String, Object> validateToken(String token) {
         try {

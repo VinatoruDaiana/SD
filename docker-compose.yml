@@ -17,7 +17,7 @@ services:
       - --providers.docker.exposedByDefault=false
       - --entrypoints.web.address=:80
     ports:
-      - "80:80"
+      - "80:80"     # Main entry point for all traffic
     networks: [proxy]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -28,70 +28,71 @@ services:
   user-db:
     image: postgres:16
     environment:
-      POSTGRES_DB: userdb
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: userpass
+      POSTGRES_DB: users_db   # ✅ FIX: Să corespundă cu application-docker.yml și healthcheck
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
     volumes:
       - user_db_data:/var/lib/postgresql/data
     networks: [backend]
     ports:
-      - "5433:5432"        # <-- port pe HOST : port în container
+      - "5433:5432"        # Host port 5433
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-# ------------ Device DB -----------------
+  # ------------ Device DB -----------------
   device-db:
     image: postgres:16
     environment:
-      POSTGRES_DB: devicedb
-      POSTGRES_USER: device
-      POSTGRES_PASSWORD: devicepass
+      POSTGRES_DB: devices_db # ✅ FIX: Să corespundă cu application-docker.yml și healthcheck
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
     volumes:
       - device_db_data:/var/lib/postgresql/data
     networks: [backend]
     ports:
-      - "5434:5432"        # <-- alt port pe HOST
+      - "5434:5432"        # Host port 5434
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U device -d devicedb"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-#-------------------Auth DB--------------------
+  #-------------------Auth DB--------------------
   auth-db:
     image: postgres:16
     environment:
-      POSTGRES_DB: authdb
-      POSTGRES_USER: auth
-      POSTGRES_PASSWORD: authpass
+      POSTGRES_DB: auth_db   # Acesta era corect
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
     volumes:
       - auth_db_data:/var/lib/postgresql/data
     networks: [backend]
     ports:
-      - "5435:5432"
+      - "5435:5432"        # Host port 5435
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U auth -d authdb"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-
-
   # ------------ User Service --------------
   user-service:
     build:
       context: ./user-service
-      dockerfile: Dockerfile   
+      dockerfile: dockerfile   
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      USER_DB_HOST: user-db
-      USER_DB_PORT: "5432"
-      USER_DB_NAME: userdb
-      USER_DB_USER: user
-      USER_DB_PASS: userpass
+      DB_IP: user-db
+      DB_PORT: 5432
+      DB_DBNAME: users_db       
+      DB_USER: postgres
+      DB_PASSWORD: root
+      auth.service.baseUrl: http://auth-service:8080
+      internal.token: super-secret-sync
+      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
     depends_on:
       user-db:
         condition: service_healthy
@@ -108,14 +109,15 @@ services:
   device-service:
     build:
       context: ./device-service
-      dockerfile: Dockerfile   
+      dockerfile: dockerfile   
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DEVICE_DB_HOST: device-db
-      DEVICE_DB_PORT: "5432"
-      DEVICE_DB_NAME: devicedb
-      DEVICE_DB_USER: device
-      DEVICE_DB_PASS: devicepass
+      DB_IP: device-db
+      DB_PORT: 5432
+      DB_DBNAME: devices_db     
+      DB_USER: postgres
+      DB_PASSWORD: root
+      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
     depends_on:
       device-db:
         condition: service_healthy
@@ -128,21 +130,22 @@ services:
       - traefik.http.routers.devices.middlewares=devices-strip@docker
     networks: [proxy, backend]
 
-
  #-------------------------Auth service --------------------
   auth-service:
     build:
       context: ./auth-service
-      dockerfile: Dockerfile
+      dockerfile: dockerfile  
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_HOST: auth-db
-      DB_PORT: "5432"
-      DB_NAME: authdb
-      DB_USER: auth
-      DB_PASS: authpass
-      JWT_SECRET: change-me-please
-      JWT_EXP_SECONDS: "86400"
+      DB_IP: auth-db
+      DB_PORT: 5432
+      DB_DBNAME: auth_db
+      DB_USER: postgres
+      DB_PASSWORD: root
+      user.service.baseUrl: http://user-service:8080
+      internal.token: super-secret-sync
+      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+      jwt.expirationMs: 86400
     depends_on:
       auth-db:
         condition: service_healthy
@@ -170,4 +173,3 @@ services:
       - traefik.http.routers.web.entrypoints=web
       - traefik.http.services.web.loadbalancer.server.port=80
     networks: [proxy]
-
