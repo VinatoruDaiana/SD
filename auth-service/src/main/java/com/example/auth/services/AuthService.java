@@ -1,10 +1,10 @@
 package com.example.auth.services;
 
 import java.util.Map;
-import java.util.Optional;
 
 import com.example.auth.requests.SyncUserFromUsersService;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,53 +26,57 @@ public class AuthService {
     private final com.example.auth.services.JwtService jwt;
     private final UserClient userClient;
 
-   public Long registerUser(RegisterRequest request) {
-    if (userRepository.findByUsername(request.username()).isPresent()) {
-        throw new RuntimeException("Username already exists");
-    }
-    
-    User user = User.builder()
-            .username(request.username())
-            .email(request.email())
-            .password(encoder.encode(request.password()))
-            .role(UserRole.USER)
-            .build();
+    @Value("${sync.enabled:false}")
+    private boolean syncEnabled;
 
-    User saved = userRepository.save(user);
+    public Long registerUser(RegisterRequest request) {
 
-    // Async sync to avoid blocking
-    try {
-        userClient.upsertUser(
-                saved.getUsername(),
-                saved.getEmail(),
-                saved.getPassword(),
-                saved.getRole().name()
-        );
-    } catch (Exception e) {
-        System.err.println("Warning: Failed to sync to user-service: " + e.getMessage());
-        // Don't fail the registration if sync fails
-    }
+        if (userRepository.findByUsername(request.username()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        User user = User.builder()
+                .username(request.username())
+                .email(request.email())
+                .password(encoder.encode(request.password()))
+                .role(UserRole.USER)
+                .build();
 
-    return saved.getId();
-}
+        User saved = userRepository.save(user);
 
+        // Sincronizare DOAR dacă e activată
+        if (syncEnabled) {
+            try {
+                System.out.println("[AUTH] Syncing to user-service...");
+                userClient.upsertUser(
+                        saved.getUsername(),
+                        saved.getEmail(),
+                        saved.getPassword(),
+                        saved.getRole().name()
+                );
+                System.out.println("[AUTH] Sync OK");
+            } catch (Exception e) {
+                System.err.println("[AUTH] Sync failed: " + e.getMessage());
+            }
+        }
 
-
-
-   public String login(LoginRequest loginRequest) {
-    var user = userRepository.findByUsername(loginRequest.username())
-            .orElseThrow(() -> new RuntimeException("Username not found"));
-
-    if (!encoder.matches(loginRequest.password(), user.getPassword())) {
-        throw new RuntimeException("Invalid password");
+        return saved.getId();
     }
 
-    // Just return token - no sync needed during login
-    return jwt.generateAccess(
-            user.getUsername(),
-            String.valueOf(user.getRole()),
-            user.getId());
-}
+
+    public String login(LoginRequest loginRequest) {
+
+        var user = userRepository.findByUsername(loginRequest.username())
+                .orElseThrow(() -> new RuntimeException("Username not found"));
+
+        if (!encoder.matches(loginRequest.password(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return jwt.generateAccess(
+                user.getUsername(),
+                String.valueOf(user.getRole()),
+                user.getId());
+    }
 
     public Map<String, Object> validateToken(String token) {
         try {
@@ -89,12 +93,10 @@ public class AuthService {
         var u = userRepository.findByUsername(in.username)
                 .orElseGet(() -> User.builder().username(in.username).build());
 
-
         String email = (in.email == null || in.email.isBlank())
                 ? (in.username + "@example.local")
                 : in.email;
         u.setEmail(email);
-
 
         if (in.passwordHash != null && !in.passwordHash.isBlank()) {
             u.setPassword(in.passwordHash);
@@ -107,8 +109,6 @@ public class AuthService {
 
     @Transactional
     public void deleteByUsername(String username) {
-        // idempotent: dacă nu există, ignore
         userRepository.deleteByUsername(username);
     }
 }
-

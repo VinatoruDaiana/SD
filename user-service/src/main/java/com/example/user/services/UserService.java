@@ -8,6 +8,7 @@ import com.example.user.handlers.exceptions.model.CustomException;
 import com.example.user.handlers.exceptions.model.ResourceNotFoundException;
 import com.example.user.integration.AuthClient;
 import com.example.user.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,9 @@ public class UserService {
     private final PasswordEncoder encoder;
     private final AuthClient authClient;
 
+    @Value("${sync.enabled:false}")
+    private boolean syncEnabled;
+
     public UserService(UserRepository repo, PasswordEncoder encoder, AuthClient authClient) {
         this.repo = repo;
         this.encoder = encoder;
@@ -34,7 +38,6 @@ public class UserService {
             throw new IllegalArgumentException("Username already exists");
         }
 
-
         User u = new User();
         u.setUsername(in.getUsername());
         u.setEmail(in.getEmail());
@@ -43,18 +46,20 @@ public class UserService {
 
         u = repo.save(u);
 
-
-        try {
-            System.out.println("[SYNC→AUTH] " + u.getUsername());
-            authClient.upsertAuth(
-                    u.getUsername(),
-                    u.getEmail(),
-                    u.getPasswordHash(),
-                    u.getRole()
-            );
-            System.out.println("[SYNC→AUTH] OK");
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        // Sincronizare DOAR dacă e activată
+        if (syncEnabled) {
+            try {
+                System.out.println("[USER] Syncing to auth-service...");
+                authClient.upsertAuth(
+                        u.getUsername(),
+                        u.getEmail(),
+                        u.getPasswordHash(),
+                        u.getRole()
+                );
+                System.out.println("[USER] Sync OK");
+            } catch (Exception ex) {
+                System.err.println("[USER] Sync failed: " + ex.getMessage());
+            }
         }
 
         return new UserDTO(
@@ -70,19 +75,16 @@ public class UserService {
                 .toList();
     }
 
-
     public UserDetailsDTO getById(UUID id) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserBuilder.toUserDetailsDTO(user);
     }
 
-
     @Transactional
     public UserDTO update(UUID id, UserDetailsDTO in) {
         var u = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
-
 
         if (in.getUsername() != null && !in.getUsername().isBlank()
                 && !in.getUsername().equals(u.getUsername())) {
@@ -96,11 +98,9 @@ public class UserService {
             u.setRole(in.getRole());
         }
 
-
         if (in.getPassword() != null && !in.getPassword().isBlank()) {
             u.setPasswordHash(encoder.encode(in.getPassword()));
         }
-
 
         if (in.getEmail() != null && !in.getEmail().isBlank()) {
             u.setEmail(in.getEmail());
@@ -108,42 +108,39 @@ public class UserService {
 
         u = repo.save(u);
 
-
-        try {
-            authClient.upsertAuth(
-                    u.getUsername(),
-                    u.getEmail(),
-                    u.getPasswordHash(),
-                    u.getRole()
-            );
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        // Sincronizare DOAR dacă e activată
+        if (syncEnabled) {
+            try {
+                authClient.upsertAuth(
+                        u.getUsername(),
+                        u.getEmail(),
+                        u.getPasswordHash(),
+                        u.getRole()
+                );
+            } catch (Exception ex) {
+                System.err.println("[USER] Sync failed: " + ex.getMessage());
+            }
         }
 
         return new UserDTO(u.getId(), u.getUsername(), u.getRole());
     }
-
-
 
     @Transactional
     public void delete(UUID id) {
         var u = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
-
         repo.delete(u);
 
-
-        try {
-            authClient.deleteAuth(u.getUsername());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        // Sincronizare DOAR dacă e activată
+        if (syncEnabled) {
+            try {
+                authClient.deleteAuth(u.getUsername());
+            } catch (Exception ex) {
+                System.err.println("[USER] Delete sync failed: " + ex.getMessage());
+            }
         }
     }
-
-
-
-
 
     private void validateRole(String role) {
         if (!"ADMIN".equals(role) && !"CLIENT".equals(role)) {
@@ -151,12 +148,9 @@ public class UserService {
         }
     }
 
-
-
     public UserDTO getByUsername(String username) {
         User u = repo.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserBuilder.toUserDTO(u);
     }
-
 }

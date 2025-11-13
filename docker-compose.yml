@@ -82,27 +82,26 @@ services:
   user-service:
     build:
       context: ./user-service
-      dockerfile: dockerfile   
+      dockerfile: Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_IP: user-db
-      DB_PORT: 5432
-      DB_DBNAME: users_db       
-      DB_USER: postgres
-      DB_PASSWORD: root
-      auth.service.baseUrl: http://auth-service:8080
-      internal.token: super-secret-sync
-      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+      USER_DB_HOST: user-db
+      USER_DB_PORT: "5432"
+      USER_DB_NAME: userdb
+      USER_DB_USER: user
+      USER_DB_PASS: userpass
+      JWT_SECRET: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+      AUTH_SERVICE_BASE_URL: http://auth-service:8080
+      INTERNAL_TOKEN: super-secret-sync
+      SYNC_ENABLED: "false"
     depends_on:
       user-db:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.users.rule=PathPrefix(`/users`)
+      - traefik.http.routers.users.rule=PathPrefix(`/api/users`)
       - traefik.http.routers.users.entrypoints=web
       - traefik.http.services.users.loadbalancer.server.port=8080
-      - traefik.http.middlewares.users-strip.stripprefix.prefixes=/users
-      - traefik.http.routers.users.middlewares=users-strip@docker
     networks: [proxy, backend]
 
   # ------------ Device Service ------------
@@ -130,32 +129,30 @@ services:
       - traefik.http.routers.devices.middlewares=devices-strip@docker
     networks: [proxy, backend]
 
- #-------------------------Auth service --------------------
+ #-------------------------Auth service -------------------- 
   auth-service:
     build:
       context: ./auth-service
-      dockerfile: dockerfile  
+      dockerfile: Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_IP: auth-db
-      DB_PORT: 5432
-      DB_DBNAME: auth_db
-      DB_USER: postgres
-      DB_PASSWORD: root
-      user.service.baseUrl: http://user-service:8080
-      internal.token: super-secret-sync
-      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
-      jwt.expirationMs: 86400
+      DB_HOST: auth-db
+      DB_PORT: "5432"
+      DB_NAME: authdb
+      DB_USER: auth
+      DB_PASS: authpass
+      JWT_SECRET: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+      INTERNAL_TOKEN: super-secret-sync
+      USER_SERVICE_BASE_URL: http://user-service:8080
+      SYNC_ENABLED: "false"
     depends_on:
       auth-db:
         condition: service_healthy
     labels:
       - traefik.enable=true
-      - traefik.http.routers.auth.rule=PathPrefix(`/auth`)
+      - traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)
       - traefik.http.routers.auth.entrypoints=web
       - traefik.http.services.auth.loadbalancer.server.port=8080
-      - traefik.http.middlewares.auth-strip.stripprefix.prefixes=/auth
-      - traefik.http.routers.auth.middlewares=auth-strip@docker
     networks: [proxy, backend]
 
  # ------------ Frontend ------------------
