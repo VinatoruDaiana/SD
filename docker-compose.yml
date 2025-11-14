@@ -1,11 +1,4 @@
-networks:
-  proxy:
-  backend:
 
-volumes:
-  user_db_data:
-  device_db_data:
-  auth_db_data: 
 
 services:
   # ------------ Reverse proxy -------------
@@ -13,160 +6,156 @@ services:
     image: traefik:v3.0
     container_name: traefik
     command:
-      - --providers.docker=true
-      - --providers.docker.exposedByDefault=false
-      - --entrypoints.web.address=:80
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"     
-    networks: [proxy]
+      - "80:80"
+      - "8088:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on: []
+    networks:
+      - app_net
     
 
   # ------------ User DB -------------------
   user-db:
     image: postgres:16
+    container_name: user-db
     environment:
-      POSTGRES_DB: users_db   
+      POSTGRES_DB: users_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
     volumes:
       - user_db_data:/var/lib/postgresql/data
-    networks: [backend]
     ports:
-      - "5433:5432"       
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      - "5433:5432" 
+    networks:
+      - app_net
+
 
   # ------------ Device DB -----------------
   device-db:
     image: postgres:16
+    container_name: device-db
     environment:
-      POSTGRES_DB: devices_db 
+      POSTGRES_DB: devices_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
     volumes:
       - device_db_data:/var/lib/postgresql/data
-    networks: [backend]
     ports:
-      - "5434:5432"       
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U device -d devicedb"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      - "5434:5432"  
+    networks:
+      - app_net
 
   #-------------------Auth DB--------------------
   auth-db:
     image: postgres:16
+    container_name: auth-db
     environment:
-      POSTGRES_DB: auth_db   
+      POSTGRES_DB: auth_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
     volumes:
       - auth_db_data:/var/lib/postgresql/data
-    networks: [backend]
     ports:
-      - "5435:5432"       
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U auth -d authdb"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      - "5435:5432"  
+    networks:
+      - app_net
 
   # ------------ User Service --------------
   user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
+    build: ./user-service
+    container_name: user-service
+    expose:
+      - "8081"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      USER_DB_HOST: user-db
-      USER_DB_PORT: "5432"
-      USER_DB_NAME: users_db
-      USER_DB_USER: postgres
-      USER_DB_PASS: root
-      JWT_SECRET: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
-      AUTH_SERVICE_BASE_URL: http://auth-service:8080
-      INTERNAL_TOKEN: super-secret-sync
-      SYNC_ENABLED: "false"
-    depends_on:
-      user-db:
-        condition: service_healthy
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=user-db
+      - DB_PORT=5432
+      - DB_DBNAME=users_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8081
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.users.rule=PathPrefix(`/api/users`)
-      - traefik.http.routers.users.entrypoints=web
-      - traefik.http.services.users.loadbalancer.server.port=8080
-    networks: [proxy, backend]
-
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=PathPrefix(`/api/user`)"
+      - "traefik.http.services.user.loadbalancer.server.port=8081"
+    networks:
+      - app_net
   # ------------ Device Service ------------
   device-service:
-    build:
-      context: ./device-service
-      dockerfile: dockerfile   
+    build: ./device-service
+    container_name: device-service
+    expose:
+      - "8082"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      DB_IP: device-db
-      DB_PORT: 5432
-      DB_DBNAME: devices_db     
-      DB_USER: postgres
-      DB_PASSWORD: root
-      security.jwt.secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
-    depends_on:
-      device-db:
-        condition: service_healthy
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=device_db
+      - DB_PORT=5432
+      - DB_DBNAME=devices_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8082
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.devices.rule=PathPrefix(`/devices`)
-      - traefik.http.routers.devices.entrypoints=web
-      - traefik.http.services.devices.loadbalancer.server.port=8080
-      - traefik.http.middlewares.devices-strip.stripprefix.prefixes=/devices
-      - traefik.http.routers.devices.middlewares=devices-strip@docker
-    networks: [proxy, backend]
+      - "traefik.enable=true"
+      - "traefik.http.routers.device.rule=PathPrefix(`/api/device`)"
+      - "traefik.http.services.device.loadbalancer.server.port=8081"
+      - "traefik.http.routers.my-device-service.rule=PathPrefix(`/api/my-devices`)"
+      - "traefik.http.services.device.loadbalancer.server.port=8082"
+    networks:
+      - app_net
+
 
  #-------------------------Auth service -------------------- 
   auth-service:
-    build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+    build: ./auth-service
+    container_name: auth-service
+    expose:
+      - "8083"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      DB_HOST: auth-db
-      DB_PORT: "5432"
-      DB_NAME: auth_db
-      DB_USER: postgres
-      DB_PASS: root
-      JWT_SECRET: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
-      INTERNAL_TOKEN: super-secret-sync
-      USER_SERVICE_BASE_URL: http://user-service:8080
-      SYNC_ENABLED: "false"
-    depends_on:
-      auth-db:
-        condition: service_healthy
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=auth_db
+      - DB_PORT=5432
+      - DB_DBNAME=auth_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8083
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)
-      - traefik.http.routers.auth.entrypoints=web
-      - traefik.http.services.auth.loadbalancer.server.port=8080
-    networks: [proxy, backend]
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8083"
+    networks:
+      - app_net
 
  # ------------ Frontend ------------------
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    depends_on:
-      - user-service
-      - device-service
-      - auth-service
+    build: ./frontend
+    container_name: frontend
+    expose:
+      - "5173"
+    stdin_open: true
+    tty: true
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.web.rule=PathPrefix(`/`)
-      - traefik.http.routers.web.entrypoints=web
-      - traefik.http.services.web.loadbalancer.server.port=80
-    networks: [proxy]
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - app_net
+      
+# Network Definition
+networks:
+  app_net:
+    driver: bridge
+
+# Volumes for persistent DB data
+volumes:
+  user_db_data:
+    driver: local
+  device_db_data:
+    driver: local
+  auth_db_data:
+    driver: local
+

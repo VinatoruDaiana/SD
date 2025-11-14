@@ -63,30 +63,20 @@ public class AuthService {
     }
 
 
-    public String login(LoginRequest loginRequest) {
+public String login(LoginRequest loginRequest) {
+    var user = userRepository.findByUsername(loginRequest.username())
+            .orElseThrow(() -> new RuntimeException("Username not found"));
 
-        var user = userRepository.findByUsername(loginRequest.username())
-                .orElseThrow(() -> new RuntimeException("Username not found"));
-
-        if (!encoder.matches(loginRequest.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
-        }
-
-        return jwt.generateAccess(
-                user.getUsername(),
-                String.valueOf(user.getRole()),
-                user.getId());
+    if (!encoder.matches(loginRequest.password(), user.getPassword())) {
+        throw new RuntimeException("Invalid password");
     }
 
-    public Map<String, Object> validateToken(String token) {
-        try {
-            String username = jwt.extractUsername(token);
-            boolean valid = jwt.isTokenValid(token, username);
-            return Map.of("username", username, "valid", valid);
-        } catch (Exception e) {
-            return Map.of("valid", false, "error", e.getMessage());
-        }
-    }
+    // ✅ NO SYNC HERE - just return the token
+    return jwt.generateAccess(
+            user.getUsername(),
+            String.valueOf(user.getRole()),
+            user.getId());
+}
 
     @Transactional
     public void upsertFromUsersService(SyncUserFromUsersService in) {

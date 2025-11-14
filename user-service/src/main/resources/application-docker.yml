@@ -1,5 +1,5 @@
 server:
-  port: 8081   # match cu EXPOSE 8081 din Dockerfile
+  port: 8081
 
 spring:
   datasource:
@@ -16,6 +16,20 @@ spring:
     init:
       mode: never
 
+# Internal service communication through Docker network
 auth:
   service:
     baseUrl: http://auth-service:8083
+
+# Internal token for service-to-service communication
+internal:
+  token: super-secret-sync
+
+# JWT secret
+security:
+  jwt:
+    secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+
+# Disable sync to avoid circular calls
+sync:
+  enabled: false

@@ -1,8 +1,6 @@
 // ==== BASE-uri relative (Traefik, same-origin) ====
 const AUTH_BASE = import.meta.env.VITE_AUTH_BASE || "/auth";
 console.log("AUTH_BASE =", AUTH_BASE); 
-
-
 const USER_BASE  = import.meta.env.VITE_USERS_BASE || "/users";
 const DEVICE_BASE = import.meta.env.VITE_DEVICES_BASE || "/devices";
 

@@ -16,11 +16,23 @@ spring:
     init:
       mode: never
 
-# call-uri către celelalte servicii din rețeaua Docker
+# Internal service communication through Docker network
 user:
   service:
     baseUrl: http://user-service:8081
 
-# dacă ai nevoie de CORS:
 frontend:
   origin: http://localhost
+
+# Internal token for service-to-service communication
+internal:
+  token: super-secret-sync
+
+# JWT secret
+security:
+  jwt:
+    secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+
+# Disable sync to avoid circular calls
+sync:
+  enabled: false

@@ -1,5 +1,5 @@
 server:
-  port: 8082   # device-service expune 8080 acum; recomand să-l standardizezi la 8082
+  port: 8082
 
 spring:
   datasource:
@@ -16,6 +16,12 @@ spring:
     init:
       mode: never
 
+# Internal service communication
 user:
   service:
     baseUrl: http://user-service:8081
+
+# JWT secret
+security:
+  jwt:
+    secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
