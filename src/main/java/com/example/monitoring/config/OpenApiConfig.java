@@ -10,12 +10,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "User Service API",
+                title = "Monitoring Service API",
                 version = "v1",
-                description = "CRUD useri "
+                description = "Consumul orar de energie pentru device-uri"
         ),
         servers = {
-                @Server(url = "http://localhost:8081", description = "local"),
+                @Server(url = "http://localhost:8084", description = "local"),
                 @Server(url = "/", description = "container / Traefik")
         }
 )
@@ -26,5 +26,4 @@ import org.springframework.context.annotation.Configuration;
         bearerFormat = "JWT"
 )
 public class OpenApiConfig {
-    // Nimic de implementat – doar anotările
 }
