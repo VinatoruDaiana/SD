@@ -1,4 +1,4 @@
-// src/pages/AdminDevices.jsx
+
 import { useEffect, useMemo, useState } from "react";
 import {
   apiListDevices,
@@ -13,7 +13,7 @@ export default function AdminDevices() {
   const emptyForm = useMemo(() => ({ id: null, name: "", maxConsumption: "", description: "" }), []);
   const [devices, setDevices] = useState([]);
   const [form, setForm] = useState(emptyForm);
-  const [assignMap, setAssignMap] = useState({}); // deviceId -> userId
+  const [assignMap, setAssignMap] = useState({}); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

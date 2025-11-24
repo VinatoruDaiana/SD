@@ -1,56 +1,63 @@
-// src/pages/AdminHome.jsx
-import { Link } from "react-router-dom";
+
+import { useNavigate } from "react-router-dom";
 
 export default function AdminHome() {
-  return (
-    <div style={{
-      minHeight: "100vh",
-      display: "grid",
-      placeItems: "center",
-      background: "#f7f7f7",
-      padding: 24
-    }}>
-      <div style={{
-        width: 420,
-        maxWidth: "90vw",
-        background: "white",
-        border: "1px solid #e5e5e5",
-        borderRadius: 12,
-        padding: 32,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-        textAlign: "center"
-      }}>
-        <h2 style={{ marginBottom: 24 }}>Admin — acțiuni</h2>
+  const navigate = useNavigate();
+   return (
+    <div style={{ padding: "40px 16px" }}>
+      <div
+        style={{
+          maxWidth: 600,
+          margin: "0 auto",
+          padding: 32,
+          borderRadius: 16,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+          background: "white",
+          textAlign: "center",
+        }}
+      >
+        <h2 style={{ marginBottom: 32 }}>Admin — acțiuni</h2>
 
-        <div style={{ display: "grid", gap: 16 }}>
-          <Link
-            to="/app/admin/users"
-            style={{
-              display: "block",
-              padding: "14px 18px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              textDecoration: "none",
-              fontWeight: 600
-            }}
-          >
-            Operații CRUD pe useri
-          </Link>
+        <button
+          style={{
+            display: "block",
+            width: "100%",
+            padding: "12px 16px",
+            marginBottom: 16,
+            borderRadius: 999,
+            border: "1px solid #ccc",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 600,
+            color: "purple",
+          }}
+          onClick={() => {
+            console.log("[AdminHome] go to /admin/users");
+            navigate("/admin/users");
+          }}
+        >
+          Operații CRUD pe useri
+        </button>
 
-          <Link
-            to="/app/admin/devices"
-            style={{
-              display: "block",
-              padding: "14px 18px",
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              textDecoration: "none",
-              fontWeight: 600
-            }}
-          >
-            Operații CRUD pe devices
-          </Link>
-        </div>
+        <button
+          style={{
+            display: "block",
+            width: "100%",
+            padding: "12px 16px",
+            borderRadius: 999,
+            border: "1px solid #ccc",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 600,
+            color: "purple",
+          }}
+          onClick={() => {
+            console.log("[AdminHome] go to /admin/devices");
+            navigate("/admin/devices");
+          }}
+        >
+          Operații CRUD pe devices
+        </button>
       </div>
     </div>
   );

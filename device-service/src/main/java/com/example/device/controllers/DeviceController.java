@@ -23,7 +23,7 @@ import java.util.UUID;
 @Tag(name = "Devices")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
-@RequestMapping("/devices")
+@RequestMapping("/api/devices")
 
 public class DeviceController {
 

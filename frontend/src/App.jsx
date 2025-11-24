@@ -6,9 +6,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminDevices from "./pages/AdminDevices";
 import AdminHome from "./pages/AdminHome";
 
-// =====================
 // Gardian pentru user logat
-// =====================
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div style={{ padding: 24 }}>Loading…</div>;
@@ -16,52 +14,36 @@ function RequireAuth({ children }) {
   return children;
 }
 
-// =====================
 // Gardian pentru admin
-// =====================
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ padding: 24 }}>Loading…</div>;
-  if (!user) return <Navigate to="/" replace />;
-  const role = user.role;
+
+  if (loading) {
+    return <div style={{ padding: 24 }}>Loading…</div>;
+  }
+
+  const role = String(user?.role ?? "").toUpperCase();
   const isAdmin = role === "ADMIN" || role === "ROLE_ADMIN";
-  if (!isAdmin) return <Navigate to="/app" replace />;
+
+  console.log("[RequireAdmin] user from context:", user);
+  console.log("[RequireAdmin] role:", role, "isAdmin:", isAdmin);
+
+  if (!user || !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }
 
-function AppHomeRedirect() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/" replace />;
-  // dacă e admin -> du-l la pagina cu cele 2 butoane (AdminHome)
-  if (user.role === "ADMIN" || user.role === "ROLE_ADMIN") {
-    return <Navigate to="/app/admin" replace />;
-  }
-  // dacă e user normal, du-l la dashboard
-  return <Navigate to="/app/dashboard" replace />;
-}
-
-// =====================
-// Componenta principală
-// =====================
 export default function App() {
   return (
     <Routes>
-      {/* mereu login/register la / */}
+      {/* pagina de login / register */}
       <Route path="/" element={<AuthPage />} />
 
-      {/* dashboard protejat (pentru user logat) */}
+      {/* dashboard user normal */}
       <Route
-        path="/app"
-        element={
-          <RequireAuth>
-            <AppHomeRedirect />
-          </RequireAuth>
-        }
-      />
-
-
-      <Route
-        path="/app/dashboard"
+        path="/dashboard"
         element={
           <RequireAuth>
             <Dashboard />
@@ -69,28 +51,29 @@ export default function App() {
         }
       />
 
+      {/* home admin (card cu butoane) */}
       <Route
-        path="/app/admin"
+        path="/admin"
         element={
           <RequireAdmin>
             <AdminHome />
           </RequireAdmin>
         }
-     />
+      />
 
-      {/* CRUD utilizatori doar pentru admin */}
+      {/* CRUD pe useri */}
       <Route
-        path="/app/admin/users"
+        path="/admin/users"
         element={
           <RequireAdmin>
             <AdminUsers />
           </RequireAdmin>
         }
-
       />
 
+      {/* CRUD pe devices */}
       <Route
-        path="/app/admin/devices"
+        path="/admin/devices"
         element={
           <RequireAdmin>
             <AdminDevices />
@@ -102,6 +85,4 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
-
-  
 }

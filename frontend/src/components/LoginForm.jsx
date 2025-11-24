@@ -2,11 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-/**
- * Componenta LoginForm — formular de autentificare
- * Apelează funcția `login` din AuthContext și redirecționează utilizatorul
- * în funcție de rolul extras din JWT (ADMIN → /app/admin, altfel /app/dashboard).
- */
+
 export default function LoginForm() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -16,23 +12,42 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+
+
+
+
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
 
-    try {
-      const user = await login({ username, password });
-      const role = String(user.role || "").toUpperCase();
-      const isAdmin = role === "ADMIN" || role === "ROLE_ADMIN";
+  console.log("[LoginForm] handleSubmit called");
 
-      navigate(isAdmin ? "/app/admin" : "/app/dashboard", { replace: true });
-    } catch (err) {
-      console.error("[LoginForm] login failed:", err);
-      setError(err.message || "Login failed. Please check credentials.");
-    } finally {
-      setLoading(false);
+  try {
+    const user = await login({ username, password });
+    console.log("[LoginForm] user from login:", user);
+
+    if (!user) {
+      setError("Backend did not return user data.");
+      return;
     }
+
+    const role = String(user.role ?? "").toUpperCase();
+    const isAdmin = role === "ADMIN" || role === "ROLE_ADMIN";
+
+    console.log("[LoginForm] role:", role);
+    console.log("[LoginForm] isAdmin:", isAdmin);
+
+    navigate(isAdmin ? "/admin" : "/dashboard", { replace: true });
+
+    console.log("[LoginForm] navigate called");
+  } catch (err) {
+    console.error("[LoginForm] login failed:", err);
+    setError(err.message || "Login failed. Please check credentials.");
+  } finally {
+    setLoading(false);
+  }
+
   }
 
   return (

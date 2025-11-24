@@ -8,6 +8,9 @@ import java.time.ZonedDateTime;
 import java.util.Random;
 import java.util.UUID;
 
+
+
+//geenreaza o val de consum in functie de ora si zi
 public class MeasurementGenerator {
 
     private final UUID deviceId;
@@ -15,7 +18,7 @@ public class MeasurementGenerator {
 
     public MeasurementGenerator(UUID deviceId) {
         this.deviceId = deviceId;
-        // seed optional, ca sa poti avea rezultate reproductibile daca vrei
+
         this.random = new Random();
     }
 
@@ -49,11 +52,11 @@ public class MeasurementGenerator {
         // Consum pe 10 minute = 1/6 din consumul pe ora
         double basePerTenMinutes = hourlyBase / 6.0;
 
-        // Fluctuatie +/- 20%
+        // Fluctuatie
         double factor = 0.9 + random.nextDouble() * 0.2;
         double value = basePerTenMinutes * factor;
 
-        // mic safeguard sa nu fie negativ sau 0
+        //  sa nu fie negativ sau 0
         if (value < 0.01) {
             value = 0.01;
         }

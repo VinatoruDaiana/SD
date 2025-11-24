@@ -16,11 +16,16 @@ public class DeviceDataSimulatorApplication {
     public static void main(String[] args) {
         log.info("Pornire Device Data Simulator...");
 
+        //1. incarca config-ul
         SimulatorConfig config = SimulatorConfig.load();
         log.info("Configuratie incarcata: {}", config);
 
+
+        //2. creeaza generatorul de masuratori
         MeasurementGenerator generator = new MeasurementGenerator(config.getDeviceId());
 
+
+        //3. deschide conexiunea catre RabbitMQ
         try (RabbitMQSender sender = new RabbitMQSender(
                 config.getRabbitHost(),
                 config.getRabbitPort(),
@@ -31,13 +36,22 @@ public class DeviceDataSimulatorApplication {
             long interval = config.getIntervalMillis();
             log.info("Incep simularea. Interval masurare = {} ms", interval);
 
+            //loop infinit
+            //geenreaza mesaje
+            // le trimite
+            //asteapta
+            //tot asa
+
             while (true) {
                 Instant now = Instant.now();
+
+                //geenreaza masuratoarea
                 DeviceMeasurementMessage msg = generator.generateMeasurement(now);
 
+                //trimite in RabbitMQ ca JSON
                 sender.sendMeasurement(msg);
 
-                // Sleep pana la urmatoarea masuratoare
+                // asteapta un anumit interval de timp (10 sec)
                 try {
                     Thread.sleep(interval);
                 } catch (InterruptedException e) {

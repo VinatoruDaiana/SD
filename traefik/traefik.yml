@@ -3,7 +3,7 @@ entryPoints:
     address: ":80"
 
 api:
-  dashboard: true  # poți vedea dashboard la /dashboard (vom publica doar local)
+  dashboard: true  
 
 providers:
   docker:

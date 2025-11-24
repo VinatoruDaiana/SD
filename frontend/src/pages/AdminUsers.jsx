@@ -1,4 +1,4 @@
-// src/pages/AdminUsers.jsx
+
 import { useEffect, useMemo, useState } from "react";
 import {
   apiListUsers,
@@ -36,7 +36,7 @@ const emptyForm = useMemo(() => ({ id: null, username: "", role: "USER", passwor
       id: u.id,
       username: u.username ?? "",
       role: u.role ?? "USER",
-      password: "", // lasă gol; trimitem doar dacă e setat
+      password: "", 
     });
   }
 

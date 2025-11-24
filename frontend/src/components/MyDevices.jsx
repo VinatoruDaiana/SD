@@ -4,7 +4,7 @@ import { apiGetUserByUsername, apiListDevicesByUser } from "../api";
 
 
 export default function MyDevices() {
-  const { user } = useAuth(); // { username, role, ... }
+  const { user } = useAuth(); 
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState([]);
   const [error, setError] = useState(null);
@@ -15,10 +15,10 @@ export default function MyDevices() {
         setLoading(true);
         setError(null);
 
-        // 1) ia userId după username
-        const u = await apiGetUserByUsername(user.username); // { id, ... }
+      
+        const u = await apiGetUserByUsername(user.username); 
 
-        // 2) ia device-urile userului
+       
         const list = await apiListDevicesByUser(u.id);
         setDevices(list);
       } catch (e) {

@@ -3,6 +3,9 @@ package com.example.devicesimulator.model;
 import java.time.Instant;
 import java.util.UUID;
 
+// rep in Java un mesaj de masurare
+// strctura va fi transformata in JSON si trimisa la RabbitMQ
+
 public class DeviceMeasurementMessage {
 
     private UUID deviceId;

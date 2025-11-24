@@ -6,6 +6,9 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 
+//citeste fisierul simulator-config
+//interpreteaza val din el
+//le pune intr-un obiect Java pe care il foloseste toata aplicatia dupa
 public class SimulatorConfig {
 
     private final String rabbitHost;

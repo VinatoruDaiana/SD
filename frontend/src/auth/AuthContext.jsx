@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // rehidrate from localStorage
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("auth");
@@ -35,11 +35,15 @@ export function AuthProvider({ children }) {
 
   // login -> ia { token, user } din apiLogin (care decodează JWT)
   async function login(credentials) {
+    console.log(" AuthContext: login() called with", credentials);
     const { token, user } = await apiLogin(credentials);
+    console.log(" AuthContext: apiLogin returned:", { token, user });
+
+    
     localStorage.setItem("auth", JSON.stringify({ token, user }));
     setToken(token);
     setUser(user);
-    return user; // important pt navigate după login
+    return user; 
   }
 
   function logout() {
@@ -52,4 +56,4 @@ export function AuthProvider({ children }) {
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 
-export default AuthProvider; // (opțional, în caz că îl imporți default pe undeva)
+export default AuthProvider; 

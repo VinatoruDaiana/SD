@@ -6,12 +6,12 @@ import RegisterForm from "../components/RegisterForm";
 import { apiRegister } from "../api";
 
 export default function AuthPage() {
-  const [mode, setMode] = useState("login");   // "login" | "register"
-  const [regStatus, setRegStatus] = useState(null); // {type:"success"|"error", text:string}
+  const [mode, setMode] = useState("login");   
+  const [regStatus, setRegStatus] = useState(null); 
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // ✅ numele corect, ca în JSX
+
  async function handleLoginSubmit(e) {
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
@@ -21,7 +21,7 @@ export default function AuthPage() {
   };
 
   try {
-    const me = await login(credentials);        // <- primești {username, role} din token
+    const me = await login(credentials);       
     const isAdmin = me.role === "ADMIN" || me.role === "ROLE_ADMIN";
     navigate(isAdmin ? "/app/admin" : "/app/dashboard", { replace: true });
   } catch (err) {

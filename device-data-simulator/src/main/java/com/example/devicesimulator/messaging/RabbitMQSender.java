@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
+//deschide conexiunea la RabbitMQ si trimite mesajele in coada
 public class RabbitMQSender implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(RabbitMQSender.class);
@@ -22,6 +23,7 @@ public class RabbitMQSender implements AutoCloseable {
     private final Channel channel;
     private final ObjectMapper objectMapper;
 
+    //se trimit mesajele
     public RabbitMQSender(String host,
                           int port,
                           String username,
@@ -45,13 +47,16 @@ public class RabbitMQSender implements AutoCloseable {
         this.objectMapper.registerModule(new JavaTimeModule());
     }
 
+    //converteste obiectul la JSON
+
     public void sendMeasurement(DeviceMeasurementMessage message) throws IOException {
         String json = objectMapper.writeValueAsString(message);
         byte[] body = json.getBytes(StandardCharsets.UTF_8);
 
+        //pune mesajul in RabbitMQ
         channel.basicPublish(
-                "",         // folosim direct queue (default exchange)
-                queueName,  // routingKey = numele cozii
+                "",
+                queueName,
                 null,
                 body
         );
