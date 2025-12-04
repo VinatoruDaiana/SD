@@ -27,6 +27,7 @@ public class AuthService {
     private final com.example.auth.services.JwtService jwt;
     private final UserClient userClient;
     private final AuthSyncProducer authSyncProducer;
+
     public Long registerUser(RegisterRequest request) {
 
         if (userRepository.findByUsername(request.username()).isPresent()) {
@@ -103,5 +104,5 @@ public class AuthService {
             //  Trimite eveniment de delete
             authSyncProducer.sendAuthUserDeleted(user);
         }
+    }
 }
-

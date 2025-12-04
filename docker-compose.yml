@@ -174,10 +174,12 @@ services:
       DB_NAME: monitoringdb
       DB_USER: monitoring
       DB_PASSWORD: monitoringpass
+    expose:
+    - "8084"  
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.monitoring.rule=PathPrefix(`/api/monitoring`)"
-      - "traefik.http.services.monitoring.loadbalancer.server.port=8080"
+    - "traefik.enable=true"
+    - "traefik.http.routers.monitoring.rule=PathPrefix(`/api/monitoring`)"
+    - "traefik.http.services.monitoring.loadbalancer.server.port=8084" 
     depends_on:
       monitoring-db:
         condition: service_healthy

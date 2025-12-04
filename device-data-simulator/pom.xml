@@ -34,12 +34,19 @@
             <version>2.17.1</version>
         </dependency>
 
-        <!-- Logging simplu -->
+        <!-- SLF4J API + implementare simplă, versiunea 1.7.x (compatibilă cu RabbitMQ client) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.13</version>
+            <version>1.7.36</version>
         </dependency>
+
     </dependencies>
 
     <build>

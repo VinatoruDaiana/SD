@@ -8,7 +8,6 @@ export default function MyDevices() {
   const [loading, setLoading] = useState(true);
   const [devices, setDevices] = useState([]);
   const [error, setError] = useState(null);
-
   const [selectedDevice, setSelectedDevice] = useState(null);
 
   useEffect(() => {
@@ -17,10 +16,7 @@ export default function MyDevices() {
         setLoading(true);
         setError(null);
 
-        // luăm user-ul curent după username
         const u = await apiGetUserByUsername(user.username);
-
-        // luăm device-urile asignate user-ului
         const list = await apiListDevicesByUser(u.id);
         setDevices(list);
       } catch (e) {
@@ -31,9 +27,9 @@ export default function MyDevices() {
     })();
   }, [user?.username]);
 
-  if (loading) return <p>Se încarcă device-urile…</p>;
-  if (error) return <p style={{ color: "crimson" }}>Eroare: {error}</p>;
-  if (!devices.length) return <p>Nu ai device-uri asignate.</p>;
+  if (loading) return <p>Loading devices…</p>;
+  if (error) return <p style={{ color: "crimson" }}>Error: {error}</p>;
+  if (!devices.length) return <p>You have no assigned devices.</p>;
 
   return (
     <>

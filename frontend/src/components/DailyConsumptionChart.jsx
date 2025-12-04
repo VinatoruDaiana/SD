@@ -10,23 +10,29 @@ export default function DailyConsumptionChart({ device }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  async function handleLoad() {
-    try {
-      setLoading(true);
-      setError(null);
+ async function handleLoad() {
+  try {
+    setLoading(true);
+    setError(null);
 
-      const result = await apiGetDailyConsumption(device.id, date);
+    console.log("🔵 Calling API with:", { deviceId: device.id, date });
+    const result = await apiGetDailyConsumption(device.id, date);
+    console.log("🔵 API Response:", result);
 
-      // ne asigurăm că sunt sortate după oră
-      result.sort((a, b) => a.hour - b.hour);
-      setData(result);
-    } catch (e) {
-      console.error(e);
-      setError(e.message || "Failed to load consumption");
-    } finally {
-      setLoading(false);
+    if (!Array.isArray(result) || result.length === 0) {
+      setError("No data returned from backend");
+      return;
     }
+
+    result.sort((a, b) => a.hour - b.hour);
+    setData(result);
+  } catch (e) {
+    console.error("🔴 API Error:", e);
+    setError(e.message || "Failed to load consumption");
+  } finally {
+    setLoading(false);
   }
+}
 
   const hasData = data && data.length > 0;
   const maxEnergy = hasData
