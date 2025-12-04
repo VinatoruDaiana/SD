@@ -106,6 +106,9 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
       - "traefik.http.services.user.loadbalancer.server.port=8081"
+    depends_on:
+      - rabbitmq
+      - user-db
     networks:
       - app_net
   # ------------ Device Service ------------
@@ -152,8 +155,8 @@ services:
     networks:
       - app_net
     depends_on:
-      auth-db:
-        condition: service_healthy
+      - rabbitmq
+      - auth-db
     ports:
       - "8083:8083"
   

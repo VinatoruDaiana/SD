@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.example.auth.requests.SyncUserFromUsersService;
+import com.example.auth.sync.AuthSyncProducer;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final com.example.auth.services.JwtService jwt;
     private final UserClient userClient;
-
+    private final AuthSyncProducer authSyncProducer;
     public Long registerUser(RegisterRequest request) {
 
         if (userRepository.findByUsername(request.username()).isPresent()) {
@@ -40,13 +41,8 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
-
-        userClient.upsertUser(
-                saved.getUsername(),
-                saved.getEmail(),
-                saved.getPassword(),
-                saved.getRole().name()
-        );
+        //  Trimite eveniment RabbitMQ în loc de REST
+        authSyncProducer.sendAuthUserCreated(saved);
 
         return saved.getId();
     }
@@ -54,10 +50,8 @@ public class AuthService {
 
     public String login(LoginRequest loginRequest) {
 
-
         var user = userRepository.findByUsername(loginRequest.username())
                 .orElseThrow(() -> new RuntimeException("Username not found"));
-
 
         if (!encoder.matches(loginRequest.password(), user.getPassword())) {
             throw new RuntimeException("Invalid password");
@@ -68,6 +62,7 @@ public class AuthService {
                 String.valueOf(user.getRole()),
                 user.getId());
     }
+
 
     public Map<String, Object> validateToken(String token) {
         try {
@@ -84,12 +79,10 @@ public class AuthService {
         var u = userRepository.findByUsername(in.username)
                 .orElseGet(() -> User.builder().username(in.username).build());
 
-
         String email = (in.email == null || in.email.isBlank())
                 ? (in.username + "@example.local")
                 : in.email;
         u.setEmail(email);
-
 
         if (in.passwordHash != null && !in.passwordHash.isBlank()) {
             u.setPassword(in.passwordHash);
@@ -99,11 +92,16 @@ public class AuthService {
         userRepository.save(u);
     }
 
-
     @Transactional
     public void deleteByUsername(String username) {
-        // idempotent: dacă nu există, ignore
-        userRepository.deleteByUsername(username);
-    }
+        Optional<User> userOpt = userRepository.findByUsername(username);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            userRepository.deleteByUsername(username);
+
+            //  Trimite eveniment de delete
+            authSyncProducer.sendAuthUserDeleted(user);
+        }
 }
 

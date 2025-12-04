@@ -2,7 +2,9 @@ server:
   port: 8081
 
 spring:
-
+  sync:
+    auth:
+      queue: auth.sync.queue
   datasource:
     url: jdbc:postgresql://user-db:5432/users_db
     username: postgres

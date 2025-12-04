@@ -2,6 +2,16 @@ server:
   port: 8083
 
 spring:
+
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+  sync:
+    auth:
+      queue: auth.sync.queue
   datasource:
     url: jdbc:postgresql://auth-db:5432/auth_db
     username: postgres
@@ -15,6 +25,8 @@ spring:
   sql:
     init:
       mode: never
+
+
 
 # Internal service communication through Docker network
 user:

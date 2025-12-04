@@ -1,4 +1,4 @@
-package com.example.user.config;
+package com.example.auth.config;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
@@ -13,28 +13,22 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQSyncConfig {
 
     @Bean
-    public Queue userSyncQueue(@Value("${sync.user.queue}") String queueName) {
-
-        return QueueBuilder.durable(queueName).build();
-    }
-
-    @Bean
     public Queue authSyncQueue(@Value("${sync.auth.queue}") String queueName) {
         return QueueBuilder.durable(queueName).build();
     }
 
     @Bean
-    public Jackson2JsonMessageConverter syncMessageConverter() {
+    public Jackson2JsonMessageConverter authMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
     @Bean
-    public RabbitTemplate syncRabbitTemplate(
+    public RabbitTemplate authRabbitTemplate(
             ConnectionFactory connectionFactory,
-            Jackson2JsonMessageConverter syncMessageConverter
+            Jackson2JsonMessageConverter authMessageConverter
     ) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(syncMessageConverter);
+        template.setMessageConverter(authMessageConverter);
         return template;
     }
 }
