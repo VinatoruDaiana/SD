@@ -1,0 +1,28 @@
+server:
+  port: 8082
+
+spring:
+
+  datasource:
+    url: jdbc:postgresql://device-db:5432/devices_db
+    username: postgres
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: never
+
+# Internal service communication
+user:
+  service:
+    baseUrl: http://user-service:8081
+
+# JWT secret
+security:
+  jwt:
+    secret: VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC

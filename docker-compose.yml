@@ -1,0 +1,230 @@
+
+
+services:
+  # ------------ Reverse proxy -------------
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app_net
+    
+
+  # ------------ User DB -------------------
+  user-db:
+    image: postgres:16
+    container_name: user-db
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" 
+    networks:
+      - app_net
+
+
+  # ------------ Device DB -----------------
+  device-db:
+    image: postgres:16
+    container_name: device-db
+    environment:
+      POSTGRES_DB: devices_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    volumes:
+      - device_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"  
+    networks:
+      - app_net
+
+  #-------------------Auth DB--------------------
+  auth-db:
+    image: postgres:16
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"  
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+    # ------------ Monitoring DB -------------------
+  monitoring-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: monitoringdb
+      POSTGRES_USER: monitoring
+      POSTGRES_PASSWORD: monitoringpass
+    volumes:
+      - monitoring_db_data:/var/lib/postgresql/data
+    networks: 
+      - app_net
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitoring -d monitoringdb"]
+      interval: 5s
+      timeout: 3s
+
+  # ------------ User Service --------------
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    expose:
+      - "8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=user-db
+      - DB_PORT=5432
+      - DB_DBNAME=users_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8081
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.services.user.loadbalancer.server.port=8081"
+    networks:
+      - app_net
+  # ------------ Device Service ------------
+  device-service:
+    build: ./device-service
+    container_name: device-service
+    expose:
+      - "8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=device_db
+      - DB_PORT=5432
+      - DB_DBNAME=devices_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8082
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.device.rule=PathPrefix(`/api/devices`)"
+      - "traefik.http.routers.my-device-service.rule=PathPrefix(`/api/my-devices`)"
+      - "traefik.http.services.device.loadbalancer.server.port=8082"
+    networks:
+      - app_net
+
+
+ #-------------------------Auth service -------------------- 
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    expose:
+      - "8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_IP=auth_db
+      - DB_PORT=5432
+      - DB_DBNAME=auth_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - PORT=8083
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8083"
+    networks:
+      - app_net
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+  
+  #-------------------------Monitoring service --------------------
+  monitoring-service:
+    build:
+      context: ./monitoring-service
+      dockerfile: Dockerfile
+    container_name: monitoring-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      TZ: Europe/Bucharest
+      DB_HOST: monitoring-db
+      DB_PORT: "5432"
+      DB_NAME: monitoringdb
+      DB_USER: monitoring
+      DB_PASSWORD: monitoringpass
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitoring.rule=PathPrefix(`/api/monitoring`)"
+      - "traefik.http.services.monitoring.loadbalancer.server.port=8080"
+    depends_on:
+      monitoring-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      - app_net
+
+
+  #-------------------------Data Collection Broker (RabbitMQ) --------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"   # port pentru aplicații (AMQP)
+      - "15672:15672" # port pentru UI (http://localhost:15672)
+    networks: 
+      - app_net
+
+
+
+ # ------------ Frontend ------------------
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    expose:
+      - "5173"
+    stdin_open: true
+    tty: true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - app_net
+      
+# Network Definition
+networks:
+  app_net:
+    driver: bridge
+
+# Volumes for persistent DB data
+volumes:
+  user_db_data:
+    driver: local
+  device_db_data:
+    driver: local
+  auth_db_data:
+    driver: local
+  monitoring_db_data: 
+    driver: local
+
