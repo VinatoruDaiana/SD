@@ -1,0 +1,17 @@
+server:
+  port: 8084
+
+spring:
+  datasource:
+    url: jdbc:postgresql://monitoring-db:5432/monitoringdb
+    username: monitoring
+    password: monitoringpass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: never

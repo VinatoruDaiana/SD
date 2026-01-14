@@ -1,0 +1,400 @@
+Energy Management System
+Descriere Proiect
+Sistem de management energetic dezvoltat folosind arhitectură de microservicii, care permite monitorizarea în timp real a consumului energetic al dispozitivelor IoT. Aplicația oferă funcționalități complete de gestionare a utilizatorilor, dispozitivelor și vizualizare a datelor de consum.
+Tehnologii Utilizate
+Backend
+
+Java 21 & Spring Boot 3.3.4/3.5.7
+Spring Security cu JWT Authentication
+Spring Data JPA & PostgreSQL
+RabbitMQ pentru mesagerie asincronă
+WebFlux pentru comunicare reactivă între servicii
+Docker & Docker Compose
+Traefik pentru reverse proxy
+
+Frontend
+
+React 19 & Vite
+React Router pentru navigare
+JWT pentru autentificare
+
+Arhitectură
+Proiectul este structurat pe microservicii:
+├── auth-service (Port 8083)          # Autentificare și gestionare JWT
+├── user-service (Port 8081)          # CRUD utilizatori
+├── device-service (Port 8082)        # CRUD dispozitive
+├── monitoring-service (Port 8084)    # Colectare și agregare date consum
+├── device-data-simulator             # Simulator date IoT
+├── frontend (Port 5173/80)           # Interface React
+└── traefik (Port 80)                 # Reverse proxy
+Baze de Date
+
+auth-db (Port 5435) - Utilizatori pentru autentificare
+user-db (Port 5433) - Date utilizatori
+device-db (Port 5434) - Date dispozitive
+monitoring-db (Port 5436) - Măsurători energetice
+
+Message Broker
+
+RabbitMQ (Port 5672, Management UI 15672) - Sincronizare între servicii
+
+Funcționalități
+Pentru Utilizatori Normali (CLIENT)
+
+Autentificare securizată
+Vizualizare dispozitive asignate
+Monitorizare consum energetic pe ore
+Grafice interactive pentru analiza consumului zilnic
+
+Pentru Administratori (ADMIN)
+
+Toate funcționalitățile utilizatorilor normali
+CRUD complet utilizatori
+CRUD complet dispozitive
+Asignare/dezasignare dispozitive la utilizatori
+Gestionare roluri și permisiuni
+
+Sincronizare Date
+
+Sincronizare automată între auth-service și user-service via RabbitMQ
+Sincronizare între user-service și device-service pentru shadow tables
+Comunicare bidirecțională pentru consistență datelor
+
+Instalare și Rulare
+Prerequisite
+
+Docker Desktop
+Java 21 JDK (pentru dezvoltare locală)
+Node.js 20+ (pentru dezvoltare frontend)
+Maven 3.9+ (pentru build-uri locale)
+
+Pornire Completă cu Docker Compose
+bash# Clonare repository
+git clone <repository-url>
+cd <project-directory>
+
+# Pornire toate serviciile
+docker-compose up --build
+
+# Sau în background
+docker-compose up -d --build
+Serviciile vor fi disponibile la:
+
+Frontend: http://localhost (port 80)
+Traefik Dashboard: http://localhost:8088
+RabbitMQ Management: http://localhost:15672 (guest/guest)
+
+Rulare Locală (Dezvoltare)
+Backend Services
+bash# Auth Service
+cd auth-service
+./mvnw spring-boot:run
+
+# User Service
+cd user-service
+./mvnw spring-boot:run
+
+# Device Service
+cd device-service
+./mvnw spring-boot:run
+
+# Monitoring Service
+cd monitoring-service
+./mvnw spring-boot:run
+Frontend
+bashcd frontend
+npm install
+npm run dev
+Device Simulator
+bashcd device-data-simulator
+mvn clean package
+java -jar target/device-data-simulator-0.0.1-SNAPSHOT.jar
+Notă: Editați simulator-config.properties pentru a configura:
+
+UUID-ul dispozitivului de simulat
+Intervalul de generare date (implicit 10 secunde)
+Conexiunea RabbitMQ
+
+Configurare
+Variabile de Mediu Importante
+Toate serviciile folosesc următoarele configurații comune:
+properties# JWT Secret (același pentru toate serviciile)
+security.jwt.secret=VZk9R7q2eFj8Ls3pT4xN6wQy8Ua1BmCk5GhDfJ0Hs2Lp3Rv7Yq4Zd8Xe9TtVbWnC
+
+# Internal Token pentru comunicare între servicii
+internal.token=super-secret-sync
+
+# RabbitMQ
+spring.rabbitmq.host=rabbitmq
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+```
+
+### Conturi Predefinite
+
+**Administrator:**
+- Username: `admin`
+- Password: `admin123`
+- Role: `ADMIN`
+
+**Client Test:**
+- Username: `client1`
+- Password: `client123`
+- Role: `CLIENT`
+
+## Structura Proiectului
+```
+.
+├── auth-service/                 # Microserviciu autentificare
+│   ├── src/main/java/
+│   │   └── com/example/auth/
+│   │       ├── config/          # Configurări (Security, RabbitMQ, OpenAPI)
+│   │       ├── controllers/     # REST endpoints
+│   │       ├── entities/        # Entități JPA
+│   │       ├── repositories/    # Spring Data repositories
+│   │       ├── services/        # Business logic
+│   │       └── sync/            # RabbitMQ producers/messages
+│   └── Dockerfile
+│
+├── user-service/                 # Microserviciu utilizatori
+│   ├── src/main/java/
+│   │   └── com/example/user/
+│   │       ├── config/
+│   │       ├── controllers/
+│   │       ├── dtos/            # Data Transfer Objects
+│   │       ├── entities/
+│   │       ├── repositories/
+│   │       ├── security/        # UserDetails implementation
+│   │       ├── services/
+│   │       └── sync/            # RabbitMQ listeners/producers
+│   └── Dockerfile
+│
+├── device-service/               # Microserviciu dispozitive
+│   ├── src/main/java/
+│   │   └── com/example/device/
+│   │       ├── config/          # JWT decoder, CORS, Security
+│   │       ├── controllers/
+│   │       ├── dtos/
+│   │       ├── entities/        # Device, UserShadow
+│   │       ├── repositories/
+│   │       ├── services/
+│   │       └── sync/            # RabbitMQ sync pentru users
+│   └── Dockerfile
+│
+├── monitoring-service/           # Microserviciu monitorizare
+│   ├── src/main/java/
+│   │   └── com/example/monitoring/
+│   │       ├── config/          # RabbitMQ consumer config
+│   │       ├── controllers/     # Endpoint consum/zi
+│   │       ├── entities/        # Measurement, DeviceShadow
+│   │       ├── repositories/
+│   │       ├── services/        # Agregare date
+│   │       └── messaging/       # RabbitMQ listener
+│   └── Dockerfile
+│
+├── device-data-simulator/        # Simulator date IoT (Java standalone)
+│   ├── src/main/java/
+│   │   └── com/example/devicesimulator/
+│   │       ├── config/          # Citire configurație
+│   │       ├── messaging/       # RabbitMQ producer
+│   │       ├── model/           # DeviceMeasurementMessage
+│   │       └── service/         # Generare valori realiste
+│   └── pom.xml
+│
+├── frontend/                     # React SPA
+│   ├── src/
+│   │   ├── api.js               # Axios/fetch wrapper
+│   │   ├── auth/                # AuthContext
+│   │   ├── components/          # Componente reusabile
+│   │   │   ├── LoginForm.jsx
+│   │   │   ├── RegisterForm.jsx
+│   │   │   ├── MyDevices.jsx
+│   │   │   └── DailyConsumptionChart.jsx
+│   │   ├── pages/               # Pagini principale
+│   │   │   ├── AuthPage.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── AdminHome.jsx
+│   │   │   ├── AdminUsers.jsx
+│   │   │   └── AdminDevices.jsx
+│   │   ├── App.jsx              # Routing și guards
+│   │   └── main.jsx
+│   ├── Dockerfile
+│   └── package.json
+│
+└── docker-compose.yml            # Orchestrare completă
+```
+
+## API Endpoints
+
+### Auth Service (`:8083/api/auth`)
+- `POST /register` - Înregistrare utilizator nou
+- `POST /login` - Autentificare (returnează JWT)
+- `GET /validate` - Validare token JWT
+- `GET /ping` - Health check
+- `POST /internal/sync` - Sincronizare de la user-service (intern)
+- `DELETE /internal/sync/{username}` - Ștergere user din auth (intern)
+
+### User Service (`:8081/api/users`)
+- `GET /` - Listare utilizatori (necesită JWT)
+- `POST /` - Creare utilizator (ADMIN)
+- `GET /{id}` - Detalii utilizator
+- `PUT /{id}` - Update utilizator (ADMIN)
+- `DELETE /{id}` - Ștergere utilizator (ADMIN)
+- `GET /by-username/{username}` - Căutare după username
+- `POST /internal/sync` - Sincronizare de la auth-service (intern)
+- `GET /health` - Health check
+
+### Device Service (`:8082/api/devices`)
+- `GET /` - Listare dispozitive
+- `POST /` - Creare dispozitiv (ADMIN)
+- `GET /{id}` - Detalii dispozitiv
+- `PUT /{id}` - Update dispozitiv (ADMIN)
+- `DELETE /{id}` - Ștergere dispozitiv (ADMIN)
+- `PATCH /{id}/assign/{userId}` - Asignare la user (ADMIN)
+- `PATCH /{id}/unassign` - Dezasignare (ADMIN)
+- `GET ?userId={userId}` - Dispozitive ale unui user
+- `GET /health` - Health check
+
+### Monitoring Service (`:8084/api/monitoring`)
+- `GET /consumption?deviceId={uuid}&date={YYYY-MM-DD}` - Consum agregat pe ore
+
+## Flow-uri Principale
+
+### 1. Înregistrare și Autentificare
+```
+User -> Frontend -> POST /api/auth/register -> Auth Service
+                                                    |
+                                              [salvare în auth-db]
+                                                    |
+                                              [RabbitMQ event]
+                                                    |
+                                              User Service -> [salvare în user-db]
+
+User -> Frontend -> POST /api/auth/login -> Auth Service
+                                                 |
+                                           [verificare credențiale]
+                                                 |
+                                           [generare JWT]
+                                                 |
+                                           Frontend <- JWT token
+```
+
+### 2. Vizualizare Consum Energetic
+```
+User -> Frontend -> GET /api/devices?userId={id} -> Device Service
+                                                         |
+                                                   [returnează lista]
+                                                         |
+Frontend -> selectare device -> GET /api/monitoring/consumption?deviceId={id}&date={date}
+                                                         |
+                                                   Monitoring Service
+                                                         |
+                                                   [agregare pe ore]
+                                                         |
+                                                   Frontend <- date JSON
+                                                         |
+                                                   [afișare grafic]
+```
+
+### 3. Simulare Date IoT
+```
+Device Simulator -> [generare măsurătoare]
+                           |
+                    [trimitere în RabbitMQ: device.data.queue]
+                           |
+                    Monitoring Service (listener)
+                           |
+                    [salvare în monitoring-db]
+                           |
+                    [disponibil pentru vizualizare]
+```
+
+### 4. CRUD Utilizator (Admin)
+```
+Admin -> Frontend -> POST /api/users -> User Service
+                                             |
+                                       [salvare user-db]
+                                             |
+                                       [RabbitMQ event: user.sync.queue]
+                                             |
+                                       Device Service (listener)
+                                             |
+                                       [creare UserShadow în device-db]
+                                       
+                                       Auth Service (listener)
+                                             |
+                                       [sincronizare în auth-db]
+Testare
+Testare Manuală cu Postman
+Colecțiile Postman sunt disponibile în:
+
+auth-service/postman_collection.json
+user-service/postman_collection.json
+device-service/postman_collection.json
+
+Flow de Test Complet
+
+Login ca Admin
+
+bash   POST http://localhost/api/auth/login
+   Body: {"username": "admin", "password": "admin123"}
+
+Creare Utilizator
+
+bash   POST http://localhost/api/users
+   Headers: Authorization: Bearer {token}
+   Body: {"username": "test", "password": "test123", "role": "CLIENT"}
+
+Creare Dispozitiv
+
+bash   POST http://localhost/api/devices
+   Headers: Authorization: Bearer {token}
+   Body: {
+     "name": "Smart Meter",
+     "maxConsumption": 5.0,
+     "description": "Living room meter"
+   }
+
+Asignare Dispozitiv
+
+bash   PATCH http://localhost/api/devices/{deviceId}/assign/{userId}
+   Headers: Authorization: Bearer {token}
+
+Pornire Simulator
+
+Editați device-data-simulator/src/main/resources/simulator-config.properties
+Setați simulator.device-id cu UUID-ul dispozitivului creat
+Rulați simulatorul
+
+
+Vizualizare Date
+
+bash   GET http://localhost/api/monitoring/consumption?deviceId={id}&date=2024-12-04
+   Headers: Authorization: Bearer {token}
+Monitorizare și Debugging
+Loguri Docker
+bash# Toate serviciile
+docker-compose logs -f
+
+# Un singur serviciu
+docker-compose logs -f auth-service
+docker-compose logs -f monitoring-service
+Verificare RabbitMQ
+Accesați http://localhost:15672 (guest/guest) pentru:
+
+Verificare cozi: user.sync.queue, auth.sync.queue, device.sync.queue, device.data.queue
+Monitorizare mesaje în tranzit
+Rate de producere/consumare
+
+Verificare Baze de Date
+bash# Conectare la PostgreSQL
+docker exec -it <container-id> psql -U postgres -d users_db
+
+# Verificare tabele
+\dt
+
+# Interogare date
+SELECT * FROM users;
+SELECT * FROM devices;
+SELECT * FROM measurements ORDER BY timestamp DESC LIMIT 10;

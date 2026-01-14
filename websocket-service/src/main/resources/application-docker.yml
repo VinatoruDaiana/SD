@@ -1,0 +1,15 @@
+server:
+  port: 8086
+
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+websocket:
+  queues:
+    overconsumption: overconsumption.queue
+  endpoint: /ws
+  allowed-origins: "*"
