@@ -1,0 +1,19 @@
+server:
+  port: ${PORT:8085}
+
+spring:
+  rabbitmq:
+    host: ${RABBIT_HOST:rabbitmq}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASS:guest}
+
+chat:
+  request:
+    queue: ${CHAT_REQUEST_QUEUE:chat.request}
+  response:
+    queue: ${CHAT_RESPONSE_QUEUE:chat.response}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:ds2025_super_secret_ds2025_super_secret}

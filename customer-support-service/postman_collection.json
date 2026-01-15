@@ -1,0 +1,36 @@
+{
+  "info": {
+    "_postman_id": "c0ffee00-0000-0000-0000-000000000000",
+    "name": "customer-support-service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer-support/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer-support", "health"]
+        }
+      }
+    },
+    {
+      "name": "Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer-support/info",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer-support", "info"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8085"}
+  ]
+}
