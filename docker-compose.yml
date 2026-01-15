@@ -225,8 +225,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - PORT=8087
-      - GEMINI_API_KEY=PASTE_YOUR_KEY_HERE
-      - GEMINI_MODEL=gemini-1.5-flash
+      - GEMINI_API_KEY=AIzaSyBm8OKzqtktCyctdS70rIANlJM0-dIdb6Q
+      - GEMINI_MODEL=gemini-2.5-flash
 
     labels:
       - "traefik.enable=true"

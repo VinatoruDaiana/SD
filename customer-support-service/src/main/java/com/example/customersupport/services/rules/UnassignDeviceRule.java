@@ -14,7 +14,7 @@ public class UnassignDeviceRule implements ChatRule {
 
     @Override
     public boolean matches(ChatContext ctx) {
-        return ctx.containsAny("unassign", "dez", "remove user", "unlink", "detach", "unassign device");
+        return ctx.containsAny("unassign", "remove user", "unlink", "detach", "unassign device");
     }
 
     @Override

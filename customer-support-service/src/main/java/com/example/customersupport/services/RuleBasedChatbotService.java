@@ -18,11 +18,11 @@ public class RuleBasedChatbotService {
 
     private final List<ChatRule> rules;
     private final InMemoryChatLogRepository chatLog;
-    private final com.example.customersupport.services.GeminiAiService geminiAiService;
+    private final com.example.customersupport.services.rules.GeminiAiService geminiAiService;
 
 
 
-    public RuleBasedChatbotService(List<ChatRule> rules, InMemoryChatLogRepository chatLog, com.example.customersupport.services.GeminiAiService geminiAiService) {
+    public RuleBasedChatbotService(List<ChatRule> rules, InMemoryChatLogRepository chatLog, com.example.customersupport.services.rules.GeminiAiService geminiAiService) {
         // sort once by priority desc
         this.rules = rules.stream()
                 .sorted(Comparator.comparingInt(ChatRule::priority).reversed())
@@ -38,26 +38,36 @@ public class RuleBasedChatbotService {
 
         ChatContext ctx = new ChatContext(req.getUserIdentifier(), req.getText(), ts);
 
-
-        chatLog.append(new com.example.customersupport.entities.ChatMessage(
+        // Salvează mesajul userului în log
+        chatLog.append(new ChatMessage(
                 req.getUserIdentifier(), req.getText(), ts, false));
 
-        for (ChatRule rule : rules) {
-            if (rule.matches(ctx)) {
-                ChatResponseMessage resp = rule.apply(ctx);
-                if (resp.getTimestamp() == null) resp.setTimestamp(Instant.now());
-                if (resp.getUserIdentifier() == null) resp.setUserIdentifier(req.getUserIdentifier());
+        // ✅ MODIFICARE CHEIE: Verifică dacă user vrea explicit AI (cuvinte cheie speciale)
+        String lowerText = req.getText().toLowerCase().trim();
+        boolean forceAI = lowerText.startsWith("ai:") ||
+                lowerText.startsWith("ask:") ||
+                lowerText.contains("gemini");
 
-                chatLog.append(new com.example.customersupport.entities.ChatMessage(
-                        req.getUserIdentifier(), resp.getReply(), resp.getTimestamp(), true));
-                return resp;
+        // Dacă user nu forțează AI, încearcă regulile
+        if (!forceAI) {
+            for (ChatRule rule : rules) {
+                if (rule.matches(ctx)) {
+                    ChatResponseMessage resp = rule.apply(ctx);
+                    if (resp.getTimestamp() == null) resp.setTimestamp(Instant.now());
+                    if (resp.getUserIdentifier() == null) resp.setUserIdentifier(req.getUserIdentifier());
+
+                    chatLog.append(new ChatMessage(
+                            req.getUserIdentifier(), resp.getReply(), resp.getTimestamp(), true));
+                    return resp;
+                }
             }
         }
 
-        // No rule matched => AI-driven customer support (Gemini)
+        // ✅ Dacă ajungi aici → nicio regulă nu a făcut match SAU user vrea explicit AI
+        // Apelează Gemini AI
         String aiReply = geminiAiService.generateReply(
                 req.getUserIdentifier(),
-                req.getText(),
+                req.getText().replaceFirst("^(ai:|ask:|gemini)", "").trim(), // curăță prefix-ul
                 chatLog.getRecent(req.getUserIdentifier())
         );
 
@@ -72,7 +82,6 @@ public class RuleBasedChatbotService {
         ));
 
         return aiResp;
-
     }
 
     public List<String> getRuleNamesInOrder() {

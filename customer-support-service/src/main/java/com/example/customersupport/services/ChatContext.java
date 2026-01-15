@@ -1,8 +1,8 @@
 package com.example.customersupport.services;
 
 import java.time.Instant;
+import java.util.*;
 import java.util.Locale;
-import java.util.UUID;
 
 public class ChatContext {
 
@@ -28,10 +28,13 @@ public class ChatContext {
     public Instant getTimestamp() { return timestamp; }
 
     public boolean containsAny(String... keywords) {
-        for (String k : keywords) {
-            if (k == null) continue;
-            if (text.contains(k.toLowerCase(Locale.ROOT))) return true;
-        }
-        return false;
+        String t = text == null ? "" : text.toLowerCase(Locale.ROOT);
+
+
+        return Arrays.stream(keywords)
+                .filter(k -> k != null && !k.isBlank())
+                .map(k -> k.toLowerCase(Locale.ROOT))
+                .distinct()
+                .anyMatch(t::contains);
     }
 }

@@ -14,7 +14,7 @@ public class GoodbyeRule implements ChatRule {
 
     @Override
     public boolean matches(ChatContext ctx) {
-        return ctx.containsAny("bye", "goodbye", "see you", "pa", "la revedere");
+        return ctx.containsAny("bye", "goodbye", "see you");
     }
 
     @Override

@@ -14,8 +14,12 @@ public class UnitsRule implements ChatRule {
 
     @Override
     public boolean matches(ChatContext ctx) {
-        return ctx.containsAny("kwh", "wh", "kw", "unit", "units", "unitate", "unitati", "watt");
+        String t = ctx.getText().toLowerCase();
+
+        // match only whole words, not substrings like "wh" inside "what"
+        return t.matches(".*\\b(kwh|kw|wh|watt|unit|units|unitate|unitati)\\b.*");
     }
+
 
     @Override
     public ChatResponseMessage apply(ChatContext ctx) {

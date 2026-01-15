@@ -14,7 +14,7 @@ public class GreetingRule implements ChatRule {
 
     @Override
     public boolean matches(ChatContext ctx) {
-        return ctx.containsAny("hi", "hello", "hey", "salut", "buna", "bună");
+        return ctx.containsAny( "hello", "hey", "salut", "buna", "bună");
     }
 
     @Override

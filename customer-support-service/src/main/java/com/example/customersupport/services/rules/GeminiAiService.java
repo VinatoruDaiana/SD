@@ -1,4 +1,4 @@
-package com.example.customersupport.services;
+package com.example.customersupport.services.rules;
 
 import com.example.customersupport.entities.ChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,7 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -24,8 +25,15 @@ public class GeminiAiService {
     @Value("${ai.gemini.baseUrl:https://generativelanguage.googleapis.com}")
     private String baseUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
+
+    public GeminiAiService(RestTemplateBuilder builder) {
+        this.restTemplate = builder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(20))
+                .build();
+    }
 
     /**
      * Returnează răspunsul Gemini pentru întrebarea userului (+ context din istoric).
@@ -41,9 +49,11 @@ public class GeminiAiService {
 
             // Build prompt cu context minim (EMS) + istoric scurt
             StringBuilder prompt = new StringBuilder();
-            prompt.append("You are a customer support assistant for an Energy Management System (EMS). ")
-                    .append("Answer concisely and clearly. ")
-                    .append("If you don't know, say so and suggest what info is needed.\n\n");
+            prompt.append("You are a helpful customer support assistant for an Energy Management System (EMS). ")
+                    .append("Prefer EMS-related answers, but if the user asks a simple general question ")
+                    .append("(e.g., basic math or definitions), answer it normally. ")
+                    .append("Be concise.\n\n");
+
 
             if (history != null && !history.isEmpty()) {
                 prompt.append("Conversation so far:\n");
