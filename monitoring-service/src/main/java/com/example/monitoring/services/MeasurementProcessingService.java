@@ -12,6 +12,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import java.time.*;
 import java.util.UUID;
@@ -26,6 +28,9 @@ public class MeasurementProcessingService {
     private final DeviceShadowRepository deviceShadowRepository;
     private final RabbitTemplate rabbitTemplate;
     private final String overconsumptionQueueName;
+
+    // cheie: deviceId|userId  -> ultima oră (epochHour) pentru care am trimis alertă
+    private final ConcurrentMap<String, Long> lastAlertHourByDeviceUser = new ConcurrentHashMap<>();
 
 
     public MeasurementProcessingService(HourlyConsumptionRepository hourlyConsumptionRepository,
@@ -99,22 +104,47 @@ public class MeasurementProcessingService {
             return;
         }
 
+        // oră curentă ca număr unic (ca să comparăm ușor orele între ele)
+        ZonedDateTime zdt = message.getTimestamp().atZone(ZoneId.systemDefault());
+        long epochHour = zdt.toEpochSecond() / 3600;
+
+        // cheia e per device + per user (dacă device se reasignează, alt user poate primi alertă în aceeași oră)
+        String alertKey = deviceId + "|" + userId;
+
 
         // 3) Check overconsumption + emit alert (catre websocket-service via RabbitMQ)
         if (currentHourlyTotalKwh > maxAllowedKwh) {
-            OverconsumptionAlertMessage alert = new OverconsumptionAlertMessage(
-                    deviceId,
-                    date,
-                    hour,
-                    currentHourlyTotalKwh,
-                    maxAllowedKwh
-            );
-            alert.setUserId(userId);
-            rabbitTemplate.convertAndSend(overconsumptionQueueName, alert);
 
-            log.info("OVERCONSUMPTION detected for device {} ({} kWh > {} kWh) at {} hour {}. Alert sent.",
-                    deviceId, currentHourlyTotalKwh, maxAllowedKwh, date, hour);
+            Long lastSentHour = lastAlertHourByDeviceUser.get(alertKey);
+
+            // trimitem doar dacă:
+            // - n-am mai trimis niciodată
+            // - sau a trecut într-o oră nouă
+            if (lastSentHour == null || lastSentHour < epochHour) {
+
+                OverconsumptionAlertMessage alert = new OverconsumptionAlertMessage(
+                        deviceId,
+                        date,
+                        hour,
+                        currentHourlyTotalKwh,
+                        maxAllowedKwh
+                );
+                alert.setUserId(userId);
+
+                rabbitTemplate.convertAndSend(overconsumptionQueueName, alert);
+
+                // marcăm că am trimis alertă pentru ora curentă
+                lastAlertHourByDeviceUser.put(alertKey, epochHour);
+
+                log.info("OVERCONSUMPTION detected for device {} ({} kWh > {} kWh) at {} hour {}. Alert sent (throttled: 1/hour).",
+                        deviceId, currentHourlyTotalKwh, maxAllowedKwh, date, hour);
+
+            } else {
+                log.debug("Overconsumption still true for device {} user {} at {} hour {}, but alert already sent this hour.",
+                        deviceId, userId, date, hour);
+            }
         }
+
     }
 
 }

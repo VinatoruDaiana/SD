@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class InMemoryChatLogRepository {
 
     private static final int MAX_MESSAGES_PER_USER = 50;
-    private final Map<UUID, Deque<ChatMessage>> store = new ConcurrentHashMap<>();
+    private final Map<String, Deque<ChatMessage>> store = new ConcurrentHashMap<>();
 
     public void append(ChatMessage message) {
         Deque<ChatMessage> deque = store.computeIfAbsent(message.getUserId(), k -> new ConcurrentLinkedDeque<>());
@@ -28,7 +28,7 @@ public class InMemoryChatLogRepository {
         }
     }
 
-    public List<ChatMessage> getRecent(UUID userId) {
+    public List<ChatMessage> getRecent(String userId) {
         Deque<ChatMessage> deque = store.get(userId);
         if (deque == null) return List.of();
         return new ArrayList<>(deque);

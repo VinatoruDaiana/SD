@@ -8,25 +8,25 @@ import java.util.UUID;
  */
 public class ChatMessage {
 
-    private UUID userId;
+    private String userId;
     private String text;
     private Instant timestamp;
     private boolean fromBot;
 
     public ChatMessage() {}
 
-    public ChatMessage(UUID userId, String text, Instant timestamp, boolean fromBot) {
+    public ChatMessage(String userId, String text, Instant timestamp, boolean fromBot) {
         this.userId = userId;
         this.text = text;
         this.timestamp = timestamp;
         this.fromBot = fromBot;
     }
 
-    public UUID getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
@@ -53,4 +53,6 @@ public class ChatMessage {
     public void setFromBot(boolean fromBot) {
         this.fromBot = fromBot;
     }
+
+
 }

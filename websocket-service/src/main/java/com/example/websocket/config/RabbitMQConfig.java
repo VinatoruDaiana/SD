@@ -34,4 +34,14 @@ public class RabbitMQConfig {
         template.setMessageConverter(messageConverter);
         return template;
     }
+    @Bean
+    public Queue chatUserInQueue(@Value("${websocket.queues.chatUserIn}") String q) {
+        return QueueBuilder.durable(q).build();
+    }
+
+    @Bean
+    public Queue chatUserOutQueue(@Value("${websocket.queues.chatUserOut}") String q) {
+        return QueueBuilder.durable(q).build();
+    }
+
 }

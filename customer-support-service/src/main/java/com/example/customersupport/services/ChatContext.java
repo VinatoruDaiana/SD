@@ -6,19 +6,23 @@ import java.util.UUID;
 
 public class ChatContext {
 
-    private final UUID userId;
+    private final String userIdentifier;
     private final String rawText;
     private final String text;
     private final Instant timestamp;
 
-    public ChatContext(UUID userId, String rawText, Instant timestamp) {
-        this.userId = userId;
+    public ChatContext(String userId, String rawText, Instant timestamp) {
+        this.userIdentifier = userId;
         this.rawText = rawText == null ? "" : rawText;
         this.text = this.rawText.trim().toLowerCase(Locale.ROOT);
         this.timestamp = timestamp;
     }
 
-    public UUID getUserId() { return userId; }
+    public String getUserId() {
+        return userIdentifier;
+    }
+
+    public String getUserIdentifier() { return userIdentifier; }
     public String getRawText() { return rawText; }
     public String getText() { return text; }
     public Instant getTimestamp() { return timestamp; }

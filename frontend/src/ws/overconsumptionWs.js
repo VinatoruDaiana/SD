@@ -3,9 +3,13 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 export function createOverconsumptionClient({ userId, onAlert, onStatus }) {
-  const client = new Client({
-    webSocketFactory: () => new SockJS("/ws"),
 
+  const WS_BASE =
+    import.meta.env.VITE_WS_BASE_URL || window.location.origin; // fallback
+
+
+  const client = new Client({
+    webSocketFactory: () => new SockJS(`${WS_BASE}/ws`),
     reconnectDelay: 5000,
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,

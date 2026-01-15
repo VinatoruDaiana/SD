@@ -26,6 +26,11 @@ export default function Dashboard() {
       <hr />
       <h3>Device-urile mele</h3>
       <MyDevices />
+
+      <Link to="/app/support/chat">
+        <button>Chatbot</button>
+      </Link>
+
     </div>
   );
 }

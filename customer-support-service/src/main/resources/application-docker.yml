@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8085}
+  port: 8087
 
 spring:
   rabbitmq:
@@ -7,13 +7,19 @@ spring:
     port: ${RABBIT_PORT:5672}
     username: ${RABBIT_USER:guest}
     password: ${RABBIT_PASS:guest}
+support:
+  queues:
+    chatUserIn: chat.user.in
+    chatUserOut: chat.user.out
 
 chat:
   request:
-    queue: ${CHAT_REQUEST_QUEUE:chat.request}
+    queue: chat.user.in
   response:
-    queue: ${CHAT_RESPONSE_QUEUE:chat.response}
+    queue: chat.user.out
 
-security:
-  jwt:
-    secret: ${JWT_SECRET:ds2025_super_secret_ds2025_super_secret}
+ai:
+  gemini:
+    apiKey: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-1.5-flash}
+    baseUrl: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}

@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminDevices from "./pages/AdminDevices";
 import AdminHome from "./pages/AdminHome";
+import SupportChatUser from "./pages/SupportChatUser";
+
 
 // Gardian pentru user logat
 function RequireAuth({ children }) {
@@ -70,6 +72,17 @@ export default function App() {
           </RequireAdmin>
         }
       />
+      
+     {/*pt chatbot*/}
+      <Route
+        path="/app/support/chat"
+        element={
+          <RequireAuth>
+            <SupportChatUser />
+         </RequireAuth>
+        }
+      />
+
 
       {/* CRUD pe devices */}
       <Route

@@ -191,6 +191,8 @@ services:
 
 
 
+
+
   #-------------------------Websocket service --------------------
   websocket-service:
     build: ./websocket-service
@@ -199,8 +201,40 @@ services:
       - rabbitmq
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    ports:
+    ports:  # opțional (poți păstra 8086:8086 pentru debug, dar nu mai e necesar)
       - "8086:8086"
+    networks:
+      - app_net
+    labels:
+      - "traefik.enable=true"
+
+      # IMPORTANT: /ws (SockJS endpoint) + /api/websocket/* (health/info dacă le folosești)
+      - "traefik.http.routers.websocket.rule=PathPrefix(`/ws`) || PathPrefix(`/api/websocket`)"
+      - "traefik.http.routers.websocket.priority=100"
+      - "traefik.http.services.websocket.loadbalancer.server.port=8086"
+    
+
+
+  #-------------------------Customer Support service --------------------
+
+  customer-support-service:
+    build: ./customer-support-service
+    container_name: customer-support-service
+    expose:
+      - "8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - PORT=8087
+      - GEMINI_API_KEY=PASTE_YOUR_KEY_HERE
+      - GEMINI_MODEL=gemini-1.5-flash
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.customer-support.rule=PathPrefix(`/api/customer-support`)"
+      - "traefik.http.services.customer-support.loadbalancer.server.port=8087"
+    depends_on:
+      rabbitmq:
+        condition: service_started
     networks:
       - app_net
 

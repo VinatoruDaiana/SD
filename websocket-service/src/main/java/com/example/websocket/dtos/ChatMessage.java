@@ -1,19 +1,11 @@
-package com.example.customersupport.dtos;
+package com.example.websocket.dtos;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.Instant;
-import java.util.UUID;
-
-public class ChatRequestMessage {
+public class ChatMessage {
     private String chatId;
     private String userIdentifier; // ex: username
     private String from;           // USER | BOT
     private String text;
     private Long timestamp;
-
-    // getters/setters
 
     public String getChatId() {
         return chatId;

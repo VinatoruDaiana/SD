@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public class ChatResponseMessage {
 
-    private UUID userId;
+    private String userIdentifier;
     private String reply;
     private Instant timestamp;
     private List<String> suggestions = new ArrayList<>();
@@ -15,18 +15,18 @@ public class ChatResponseMessage {
     public ChatResponseMessage() {
     }
 
-    public ChatResponseMessage(UUID userId, String reply, Instant timestamp) {
-        this.userId = userId;
+    public ChatResponseMessage(String userIdentifier, String reply, Instant timestamp) {
+        this.userIdentifier = userIdentifier;
         this.reply = reply;
         this.timestamp = timestamp;
     }
 
-    public UUID getUserId() {
-        return userId;
+    public String getUserIdentifier() {
+        return userIdentifier;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public void setUserIdentifier(String userIdentifier) {
+        this.userIdentifier = userIdentifier;
     }
 
     public String getReply() {

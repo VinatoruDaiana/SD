@@ -6,6 +6,8 @@ import com.example.customersupport.repositories.InMemoryChatLogRepository;
 import com.example.customersupport.entities.ChatMessage;
 import com.example.customersupport.services.rules.ChatRule;
 import org.springframework.stereotype.Service;
+import java.util.stream.Collectors;
+
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -16,33 +18,61 @@ public class RuleBasedChatbotService {
 
     private final List<ChatRule> rules;
     private final InMemoryChatLogRepository chatLog;
+    private final com.example.customersupport.services.GeminiAiService geminiAiService;
 
-    public RuleBasedChatbotService(List<ChatRule> rules, InMemoryChatLogRepository chatLog) {
+
+
+    public RuleBasedChatbotService(List<ChatRule> rules, InMemoryChatLogRepository chatLog, com.example.customersupport.services.GeminiAiService geminiAiService) {
         // sort once by priority desc
         this.rules = rules.stream()
                 .sorted(Comparator.comparingInt(ChatRule::priority).reversed())
                 .toList();
         this.chatLog = chatLog;
+        this.geminiAiService = geminiAiService;
     }
 
     public ChatResponseMessage handle(ChatRequestMessage req) {
-        Instant ts = req.getTimestamp() != null ? req.getTimestamp() : Instant.now();
-        ChatContext ctx = new ChatContext(req.getUserId(), req.getText(), ts);
+        Instant ts = (req.getTimestamp() != null)
+                ? Instant.ofEpochMilli(req.getTimestamp())
+                : Instant.now();
 
-        chatLog.append(new ChatMessage(req.getUserId(), req.getText(), ts, false));
+        ChatContext ctx = new ChatContext(req.getUserIdentifier(), req.getText(), ts);
+
+
+        chatLog.append(new com.example.customersupport.entities.ChatMessage(
+                req.getUserIdentifier(), req.getText(), ts, false));
 
         for (ChatRule rule : rules) {
             if (rule.matches(ctx)) {
                 ChatResponseMessage resp = rule.apply(ctx);
                 if (resp.getTimestamp() == null) resp.setTimestamp(Instant.now());
-                if (resp.getUserId() == null) resp.setUserId(req.getUserId());
-                chatLog.append(new ChatMessage(req.getUserId(), resp.getReply(), resp.getTimestamp(), true));
+                if (resp.getUserIdentifier() == null) resp.setUserIdentifier(req.getUserIdentifier());
+
+                chatLog.append(new com.example.customersupport.entities.ChatMessage(
+                        req.getUserIdentifier(), resp.getReply(), resp.getTimestamp(), true));
                 return resp;
             }
         }
 
-        // should never happen if FallbackRule exists
-        return new ChatResponseMessage(req.getUserId(), "Sorry, I couldn't process your request.", Instant.now());
+        // No rule matched => AI-driven customer support (Gemini)
+        String aiReply = geminiAiService.generateReply(
+                req.getUserIdentifier(),
+                req.getText(),
+                chatLog.getRecent(req.getUserIdentifier())
+        );
+
+        ChatResponseMessage aiResp = new ChatResponseMessage(
+                req.getUserIdentifier(),
+                aiReply,
+                Instant.now()
+        );
+
+        chatLog.append(new ChatMessage(
+                req.getUserIdentifier(), aiResp.getReply(), aiResp.getTimestamp(), true
+        ));
+
+        return aiResp;
+
     }
 
     public List<String> getRuleNamesInOrder() {

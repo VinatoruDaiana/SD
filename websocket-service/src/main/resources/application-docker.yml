@@ -11,5 +11,7 @@ spring:
 websocket:
   queues:
     overconsumption: overconsumption.queue
+    chatUserIn: chat.user.in
+    chatUserOut: chat.user.out
   endpoint: /ws
   allowed-origins: "*"
