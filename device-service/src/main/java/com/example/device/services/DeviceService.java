@@ -99,7 +99,11 @@ public class DeviceService {
         Device d = repo.findById(deviceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         d.setUserId(userId);
-        d = repo.saveAndFlush(d); // forțează persist + return corect
+        d = repo.saveAndFlush(d);
+
+        //  FIXED: Trimite eveniment către monitoring-service
+        deviceSyncProducer.sendDeviceAssigned(d);
+
         return DeviceBuilder.toDeviceDTO(d);
     }
 
@@ -109,8 +113,13 @@ public class DeviceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         d.setUserId(null);
         d = repo.saveAndFlush(d);
+
+        //  FIXED: Trimite eveniment către monitoring-service
+        deviceSyncProducer.sendDeviceUnassigned(d);
+
         return DeviceBuilder.toDeviceDTO(d);
     }
+
     public List<DeviceDTO> getByUser(UUID userId) {
         return repo.findByUserId(userId)
                 .stream()

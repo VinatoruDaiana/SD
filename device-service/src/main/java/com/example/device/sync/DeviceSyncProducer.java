@@ -44,4 +44,16 @@ public class DeviceSyncProducer {
     public void sendDeviceDeleted(Device device) {
         sendEvent(DeviceSyncEventType.DEVICE_DELETED, device);
     }
+    //  NEW: Trimite eveniment când device-ul e asignat la un user
+    public void sendDeviceAssigned(Device device) {
+        sendEvent(DeviceSyncEventType.DEVICE_UPDATED, device);
+        log.info("[DEVICE-SYNC] Device {} assigned to user {}", device.getId(), device.getUserId());
+    }
+
+    //  NEW: Trimite eveniment când device-ul e dezasignat
+    public void sendDeviceUnassigned(Device device) {
+        sendEvent(DeviceSyncEventType.DEVICE_UPDATED, device);
+        log.info("[DEVICE-SYNC] Device {} unassigned from user", device.getId());
+    }
 }
+
